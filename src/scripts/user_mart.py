@@ -9,7 +9,7 @@ users_mart.py
 from geo_classes import (
     EventsRaw, EventsWithUserAndCoords,
     CitiesRaw, Cities, EventsWithCitiesPartial, EventsWithCitiesAll,
-    Users, DataLoader
+    Users, DataLoader, Config
 )
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
@@ -165,18 +165,26 @@ def calculate_users_mart(spark, date, sample_rate=1.0):
             self.df.groupBy("city_name").count()\
                 .orderBy(F.desc("count")).show(10)
         
-        def save(self, path="output/users_mart"):
-            """Сохранить витрину в parquet"""
-            # Добавляем информацию о сэмпле в название
-            if self.sample_rate < 1.0:
-                path = f"{path}_sample_{int(self.sample_rate*100)}pct"
+        def save(self, path=None):
+        #Сохранить витрину в слой DML
+        # Используем путь из конфигурации по умолчанию
+            if path is None:
+                # Базовое имя для слоя DML
+                base_name = "UsersMart"
+                if self.sample_rate < 1.0:
+                    base_name = f"UsersMart_sample_{int(self.sample_rate*100)}pct"
+                
+                # Получаем полный путь через Config
+                path = Config.get_path('dml', base_name)
+            
+            # Сохраняем
             self.df.write.mode("overwrite").parquet(path)
             print(f"✅ Витрина сохранена в {path}")
-    
+        
     return UsersMart(users_mart_df, users, events_all, sample_rate)
 
 
-# Для самостоятельного тестирования файла
+# Для тестирования файла
 if __name__ == "__main__":
     print("Этот файл содержит функцию calculate_users_mart()")
     print("Используйте её в Jupyter Notebook следующим образом:")
@@ -185,8 +193,8 @@ if __name__ == "__main__":
     from users_mart import calculate_users_mart
     
     spark = create_spark_session(app_name="UsersMart")
-    users_mart = calculate_users_mart(spark, '2022-12-20', sample_rate=0.01)
+    users_mart = calculate_users_mart(spark, '2022-12-20', sample_rate=0.001)
     users_mart.desc()
-    users_mart.save("output/test_users")
+    users_mart.show(5)
     spark.stop()
     """)

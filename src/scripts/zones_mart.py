@@ -10,10 +10,11 @@ from geo_classes import (
     EventsSource, EventsRaw, EventsWithUserAndCoords,
     CitiesRaw, Cities, EventsWithCitiesPartial, EventsWithCitiesAll,
     RegistrationsWithCities, EventsWithRegsWithCities,
-    WeeklyMonthlyCityStats, DataLoader
+    WeeklyMonthlyCityStats, DataLoader, Config
 )
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
+from pyspark.sql.types import IntegerType
 
 
 def calculate_zones_mart(spark, date, sample_rate=1.0):
@@ -178,11 +179,18 @@ def calculate_zones_mart(spark, date, sample_rate=1.0):
                 F.sum("week_user").alias("total_registrations")
             ).show()
         
-        def save(self, path="output/zones_mart"):
-            """Сохранить витрину в parquet"""
-            # Добавляем информацию о сэмпле в название
-            if self.sample_rate < 1.0:
-                path = f"{path}_sample_{int(self.sample_rate*100)}pct"
+        def save(self, path=None):
+        #Сохранить витрину в слой DML
+        # Используем путь из конфигурации по умолчанию
+            if path is None:
+                # Базовое имя для слоя DML
+                base_name = "ZonesMart"
+                if self.sample_rate < 1.0:
+                    base_name = f"ZonesMart_sample_{int(self.sample_rate*100)}pct"
+                
+                # Получаем полный путь через Config
+                path = Config.get_path('dml', base_name)
+            # Сохраняем
             self.df.write.mode("overwrite").parquet(path)
             print(f"✅ Витрина сохранена в {path}")
     

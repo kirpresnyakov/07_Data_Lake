@@ -12,7 +12,7 @@ findspark.find()
 import pyspark.sql.functions as F
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.window import Window
-from pyspark.sql.types import StringType
+from pyspark.sql.types import StringType, IntegerType
 
 # ==================== КОНФИГУРАЦИЯ ====================
 
