@@ -1,7 +1,4 @@
-"""
-zones_mart.py
-Модуль для расчета витрины зон (Шаг 2)
-
+"""Модуль для расчета витрины зон (Шаг 2)
 Зависимости:
 - geo_classes.py должен находиться в той же директории или в PYTHONPATH
 """
@@ -206,8 +203,9 @@ if __name__ == "__main__":
     from zones_mart import calculate_zones_mart
     
     spark = create_spark_session(app_name="ZonesMart")
-    zones_mart = calculate_zones_mart(spark, '2022-12-20', sample_rate=0.01)
+    zones_mart = calculate_zones_mart(spark, 'ХХХХ-ХХ-ХХ', sample_rate=0.001)
     zones_mart.desc()
-    zones_mart.save("output/test_zones")
+    zones_mart.df.show(5)
+    zones_mart.save() # Сохранит в DML слой
     spark.stop()
     """)

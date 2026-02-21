@@ -193,8 +193,9 @@ if __name__ == "__main__":
     from users_mart import calculate_users_mart
     
     spark = create_spark_session(app_name="UsersMart")
-    users_mart = calculate_users_mart(spark, '2022-12-20', sample_rate=0.001)
+    users_mart = calculate_users_mart(spark, 'ХХХХ-ХХ-ХХ', sample_rate=0.001)
     users_mart.desc()
-    users_mart.show(5)
+    users_mart.df.show(5)
+    users_mart.save() # Сохранит в DML слой
     spark.stop()
     """)

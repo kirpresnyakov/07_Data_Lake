@@ -720,7 +720,7 @@ class WeeklyMonthlyCityStats(BaseEntity):
             .withColumn('month_subscription', F.sum('week_subscription').over(w))\
             .withColumn('month_user', F.sum('week_user').over(w))\
             .withColumnRenamed('city_id', 'zone_id')\
-            .orderBy('month', 'week', F.col('zone_id').cast(IntegerType()))
+            .orderBy('month', 'week', 'zone_id')
         
         self._cache_df()
         if save:
@@ -748,26 +748,32 @@ class ProximityBasedFriends(BaseEntity):
             .withColumnRenamed('user_left', 'ucc_user_left')\
             .withColumnRenamed('user_right', 'ucc_user_right')
         
+        # Создаем алиас для near_df
+        near_df = near_df.alias('near')
+        
+        # Создаем алиас для corresponded.df
+        corresponded_df = self.corresponded.df.alias('corr')
+        
         # Соединяем и фильтруем
         self.df = near_df.join(
             common_df,
-            (F.col('user_left') == F.col('ucc_user_left')) & 
-            (F.col('user_right') == F.col('ucc_user_right')),
+            (F.col('near.user_left') == F.col('ucc_user_left')) & 
+            (F.col('near.user_right') == F.col('ucc_user_right')),
             'inner'
         ).join(
-            self.corresponded.df,
-            (F.col('user_left') == F.col('user_left')) & 
-            (F.col('user_right') == F.col('user_right')),
+            corresponded_df,
+            (F.col('near.user_left') == F.col('corr.user_left')) & 
+            (F.col('near.user_right') == F.col('corr.user_right')),
             'leftanti'
         ).withColumn('processed_dttm', F.current_timestamp())\
          .withColumn('local_time',
             F.when(
-                F.col('city_left').isin('Sydney', 'Melbourne', 'Brisbane', 'Perth',
-                                       'Adelaide', 'Canberra', 'Hobart', 'Darwin'),
+                F.col('near.city_left').isin('Sydney', 'Melbourne', 'Brisbane', 'Perth',
+                                           'Adelaide', 'Canberra', 'Hobart', 'Darwin'),
                 F.from_utc_timestamp(F.col('processed_dttm'),
-                                     F.concat(F.lit('Australia/'), F.col('city_left')))
+                                     F.concat(F.lit('Australia/'), F.col('near.city_left')))
             ).otherwise(None))\
-         .drop('city_left', 'subscription_channel', 'ucc_user_left', 'ucc_user_right')
+         .drop('near.city_left', 'subscription_channel', 'ucc_user_left', 'ucc_user_right')
         
         self._cache_df()
         if save:
